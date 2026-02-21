@@ -41,8 +41,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyCtrlC, tea.KeyEsc:
 			return m, tea.Quit
 		case tea.KeyEnter:
-			m.input.Value()
+			todo:= todoItem {name: m.input.Value()}
 			m.input.SetValue("")
+			cmd := m.list.InsertItem(0,todo)
+			return m, cmd
 		case tea.KeyDown:
 			if m.input.Focused(){
 				m.input.Blur()
