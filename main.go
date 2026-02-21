@@ -1,13 +1,13 @@
 package main
 
 import (
-	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
-//===Style===
+// ===Style===
 var (
 	inputStyle = lipgloss.NewStyle().BorderStyle(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("#c29af0"))
 )
@@ -15,9 +15,9 @@ var (
 //Type
 
 type model struct {
-	input textinput.Model
-	list list.Model
-	width int
+	input  textinput.Model
+	list   list.Model
+	width  int
 	height int
 }
 
@@ -27,8 +27,6 @@ type todoItem struct {
 	done bool
 	name string
 }
-
-
 
 //====Implementation====
 
@@ -45,24 +43,38 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyEnter:
 			m.input.Value()
 			m.input.SetValue("")
+		case tea.KeyDown:
+			if m.input.Focused(){
+				m.input.Blur()
+				return m, nil
+			}
+		case tea.KeyUp:
+			if m.input.Focused()== false && m.list.Cursor()== 0{
+				m.input.Focus()
+				return m,nil
+			}
 		}
 	case tea.WindowSizeMsg:
 		m.input.Width = msg.Width - 2
-		m.list.SetSize(msg.Width, msg.Height - 3)
+		m.list.SetSize(msg.Width, msg.Height-3)
 		m.width = msg.Width
-		m.height = msg.Height	
+		m.height = msg.Height
 	}
-	var inputCmd tea.Cmd
-	m.input, inputCmd =m.input.Update(msg)
-	return m, inputCmd
+	var inputCmd, listCmd tea.Cmd
+	if m.input.Focused() {
+		m.input, inputCmd = m.input.Update(msg)
+	} else {
+		m.list, listCmd = m.list.Update(msg)
+	}
+
+	return m, tea.Batch(inputCmd, listCmd)
 }
-	
 
 func (m model) View() string {
 	return lipgloss.JoinVertical(lipgloss.Top,
 		inputStyle.
-		Width(m.width-2).
-		Height(1).Render(
+			Width(m.width-2).
+			Height(1).Render(
 			m.input.View(),
 		),
 		m.list.View(),
@@ -76,13 +88,15 @@ func newModel() model {
 	ti.Placeholder = "Nouvelle tâche à faire"
 	ti.Focus()
 	li := list.New([]list.Item{
-		todoItem{done : false, name : "Ménage Chambre"},
-		todoItem{done : false, name : "Ménage SDB"},
-		todoItem{done : true, name : "Ménage Salon"},
-	}, list.NewDefaultDelegate(),0,0)
+		todoItem{done: false, name: "Ménage Chambre"},
+		todoItem{done: false, name: "Ménage SDB"},
+		todoItem{done: true, name: "Ménage Salon"},
+	}, list.NewDefaultDelegate(), 0, 0)
+	li.SetShowStatusBar(false)
+	li.DisableQuitKeybindings()
 	return model{
 		input: ti,
-		list: li,
+		list:  li,
 	}
 }
 
@@ -99,6 +113,6 @@ func (t todoItem) Title() string {
 
 func main() {
 	m := newModel()
-	tea.NewProgram(m).Run()
+	tea.NewProgram(m, tea.WithAltScreen()).Run()
 
 }
